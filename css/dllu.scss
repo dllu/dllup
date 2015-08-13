@@ -1,0 +1,505 @@
+@import 'reset';
+@import 'manni';
+
+$font-stack: "Source Sans Pro", sans-serif;
+$dark: #060709;
+$light: #ffffff;
+$blue: #508fdd;
+$grey: #404e62;
+$lgrey: #f6f7f9;
+$red: #990000;
+
+
+html {
+    overflow-y: scroll;
+}
+body {
+    font-family: $font-stack;
+    color: $dark;
+    background: $light;
+    font-size: 18px;
+}
+
+a, a:visited {
+    text-decoration: none;
+    color: $blue;
+    outline: none;
+    font-weight: 600;
+}
+
+a:hover, a:focus {
+    background-color: $blue;
+    color: $light;
+    outline: none;
+}
+
+nav {
+    width: 80%;
+    max-width: 600px;
+    margin: 20px auto;
+}
+article nav {
+    width: 100%;
+}
+
+nav#breadcrumbs {
+    display: block;
+    font-weight: 600;
+    font-size: 25px;
+    line-height: 30px;
+    height: 36px;
+    color: $grey;
+    a, a:visited {
+        color: $grey;
+    }
+    a:hover, a:focus {
+        background: none;
+        color: $blue;
+        img {
+            margin-top: -30px;
+        }
+    }
+    a, span {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 25px;
+        height: 30px;
+        margin-right: 0.3em;
+        vertical-align: top;
+        img {
+            height: 60px;
+        }
+    }
+    span {
+        overflow: hidden;
+    }
+    @import 'logo';
+}
+
+nav#rootnav {
+    display: table;
+    background: $lgrey;
+    a, a:visited {
+        color: $grey;
+    }
+    a:hover, a:focus {
+        background: $grey;
+        color: $light;
+    }
+    a {
+        display: table-cell;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 0.5em 0em;
+        min-width: 15%;
+    }
+}
+
+nav#portfolio {
+    display: block;
+    a {
+        display: inline-block;
+        width: 45%;
+        margin-bottom: 10%;
+        figure {
+            width: 100%;
+            position: relative;
+            margin: 0;
+            img {
+                width: 100%;
+                display: block;
+            }
+            figcaption {
+                font-weight: 600;
+                font-size: 1em;
+                display: block;
+                color: $grey;
+                text-align: center;
+                line-height: 1.5em;
+                width: 100%;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                padding: 0;
+            }
+        }
+    }
+    a:nth-child(odd) {
+        margin-right: 5%;
+    }
+    a:nth-child(even) {
+        margin-left: 5%;
+    }
+    a:hover {
+        background: none;
+        figure {
+            figcaption {
+                color: $blue;
+                background: none;
+            }
+        }
+    }
+}
+
+nav#blogposts {
+    display: table;
+    a, a:visited {
+        color: $dark;
+        .blogdate {
+            color: $grey;
+        }
+    }
+    a:hover, a:focus {
+        background: $lgrey;
+        color: $grey;
+        .blogdate {
+            color: $light;
+            background: $grey;
+        }
+    }
+    a {
+        display: table-row;
+        font-weight: 400;
+        line-height: 1.5em;
+        .blogdate {
+            display: table-cell;
+            color: $grey;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.8em;
+            font-weight: 600;
+            line-height: 1.5em / 0.8em;
+            padding: 5px 10px;
+            text-align: center;
+        }
+        .blogtitle {
+            display: table-cell;
+            padding: 5px 10px;
+        }
+    }
+}
+
+article {
+    width: 80%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 20px;
+    font-kerning: normal;
+    h1, h2, h3, h4, h5, h6 {
+        display: flex;
+        display: -webkit-flex;
+    }
+    h1 {
+        font-weight: 600;
+        font-size: 1.5em;
+        line-height: 1em;
+        margin: 1em 0 0.5em 0;
+    }
+    h2 {
+        font-weight: 600;
+        font-size: 1.3em;
+        line-height: 1em;
+        margin-top: 1em;
+    }
+    h3 {
+        font-weight: 900;
+        font-size: 1em;
+        line-height: 1em;
+        margin-top: 1em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+    header {
+        border-bottom: 1px solid $grey;
+        h1 {
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+    }
+    footer {
+        color: $grey;
+        font-size: 0.7em;
+        margin: 2em 0 20px 0;
+    }
+    .refname {
+        font-size: 0.8em;
+        padding: 0.1em;
+        color: $grey;
+    }
+    .refname:before {
+        content: "[";
+        padding-right: 0.1em;
+    }
+    .refname:after {
+        content: "]";
+        padding-left: 0.1em;
+    }
+    a.refname {
+        font-size: 0.7em;
+        vertical-align: super;
+        color: $blue;
+    }
+    a.refname:hover, a.refname:focus {
+        background-color: $blue;
+        color: $light;
+    }
+    a.hnum {
+        flex-grow: 0;
+        -webkit-flex-grow: 0;
+        flex-shrink: 0;
+        -webkit-flex-shrink: 0;
+        display: inline-block;
+        color: $grey;
+        font-size: 0.8em;
+        margin-right: 1em;
+        height: 1.25em;
+        line-height: 1.25em;
+    }
+    a.fignum {
+        color: $grey;
+        font-weight: 700;
+    }
+    a.eqnum {
+        display: block;
+        position: absolute;
+        color: $grey;
+        top: 0;
+        left: 100%;
+        text-align: center;
+        font-size: 0.7em;
+        height: 2em;
+        width: 2em;
+        line-height: 2em;
+        border: 1px solid $grey;
+        border-radius: 50%;
+    }
+    a.hnum:hover, a.hnum:focus, a.fignum:hover, a.fignum:focus, a.eqnum:hover, a.eqnum:focus {
+        color: $light;
+        background-color: $grey;
+    }
+    a.bigbutton {
+        display: block;
+        margin: auto;
+        width: 30%;
+        min-width: 160px;
+        text-align: center;
+        padding: 1em;
+        background: $light;
+        border: 2px solid $grey;
+        color: $grey;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+    }
+    a.bigbutton:hover {
+        background: $grey;
+        color: $light;
+    }
+
+    p, ul, ol, blockquote, figure {
+        font-size: 1em;
+        line-height: 1.35em;
+        margin: 1em 0;
+        hyphens: auto;
+    }
+    ol li, ul li {
+        display: list-item;
+        margin: 0.5em 0 0.5em 1em;
+    }
+    ol {
+        list-style: outside decimal none;
+    }
+    ul {
+        list-style: outside disc none;
+        ul {
+            margin: 0;
+        }
+    }
+    pre, blockquote {
+        border-top: 1px solid $grey;
+        border-bottom: 1px solid $grey;
+        padding: 1em;
+        color: $grey;
+    }
+    pre, code {
+        font-family: "Source Code Pro", monospace;
+        font-size: 0.8em;
+        font-weight: 500;
+        background-color: $lgrey;
+    }
+    pre {
+        white-space: pre-wrap;
+    }
+    code {
+        color: $grey;
+        font-weight: 600;
+    }
+    div.math {
+        position: relative;
+        text-align: center;
+    }
+    em {
+        font-style: italic;
+    }
+    strong {
+        font-weight: 700;
+    }
+    figure {
+        position: relative;
+        width: 100%;
+        img {
+            display: block;
+            margin: 0 auto;
+            max-height: 600px;
+            max-width: 100%;
+        }
+        table {
+            img {
+                display: inline-block;
+                max-width: none;
+            }
+        }
+        figcaption {
+            img {
+                display: inline-block;
+                max-width: none;
+            }
+        }
+    }
+    figure>a {
+        cursor: zoom-in;
+    }
+    figcaption {
+        font-size: 0.7em;
+        line-height: 1.25em;
+        letter-spacing: 0.05em;
+        color: $grey;
+        hyphens: auto;
+    }
+    table {
+        width: 100%;
+        text-align: center;
+        color: $grey;
+    }
+    th {
+        border-bottom: 1px solid $grey;
+        font-weight: 700;
+        font-size: 0.8em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+    th, td {
+        padding: 0.3em;
+    }
+    tr:nth-child(even) {
+        background-color: $lgrey;
+    }
+    .toc {
+        font-size: 0.7em;
+        line-height: 1.25em;
+        letter-spacing: 0.05em;
+        color: $grey;
+        a {
+            color: $grey;
+            font-weight: 600;
+        }
+        a:hover, a:focus {
+            color: $light;
+            background-color: $grey;
+        }
+        ol {
+            ol {
+                margin: 0.5em 0 0.5em 1em;
+            }
+            li {
+                margin: 0;
+                padding: 0;
+                list-style: none;
+                position: relative;
+                .tocnum {
+                    display: block;
+                    float: left;
+                    height: 100%;
+                    margin-right: 1em;
+                    font-weight: 400;
+                }
+                a {
+                    display: flex;
+                    display: -webkit-flex;
+                    .tocnum {
+                        flex-grow: 0;
+                        -webkit-flex-grow: 0;
+                        flex-shrink: 0;
+                        -webkit-flex-shrink: 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media all and (min-width: 1200px) {
+    article {
+        figcaption {
+            position: absolute;
+            top: 0px;
+            left: 100%;
+            padding-left: 20px;
+            width: 280px;
+        }
+        .fignum {
+            display: block;
+            margin-bottom: 0.5em;
+        }
+        .toc {
+            position: fixed;
+            top: 0;
+            right: 50%;
+            margin-right: 320px;
+            width: 280px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        .toc>ol {
+            margin: 3em 1em 3em 0;
+        }
+    }
+}
+
+@media all and (max-width: 1199px) {
+    article {
+        figcaption {
+            position: relative;
+            padding: 1em 2em;
+        }
+        .fignum {
+            display: inline-block;
+            margin-right: 1em;
+        }
+    }
+}
+
+@media all and (max-width: 750px) {
+    body {
+        font-size: 2.4vw;
+    }
+}
+
+@media all and (max-width: 543px) {
+    body {
+        font-size: 13px;
+    }
+    nav#portfolio {
+        a {
+            width: 100%;
+            margin: 0 0 3em 0 !important;
+        }
+    }
+    nav#rootnav {
+        font-size: 0.8em;
+    }
+}

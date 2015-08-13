@@ -1,0 +1,69 @@
+$size: 12px;
+$thickness: 3px;
+$margin: 6px;
+$transtime: 0.6s;
+
+#dllu {
+  position: relative;
+  cursor: pointer;
+  margin: -$margin;
+  height: 2 * $thickness + 2 * $size + 2 * $margin;
+  width: 2 * $thickness + 2 * $size + 2 * $margin;
+  border-radius: 50%; /* so that the hover target is a perfect circle */
+  transition: $transtime;
+  #D, #L0, #L1, #U {
+    position: absolute;
+    width: $size - 2 * $thickness;
+    height: $size - 2 * $thickness;
+    transition: $transtime;
+  }
+  #D {
+    padding-left: $thickness;
+    border-top: $thickness solid $grey;
+    border-right: $thickness solid $grey;
+    border-bottom: $thickness solid $grey;
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+    top: $margin;
+    left: $margin;
+  }
+  #L0, #L1 {
+    padding-top: $thickness;
+    padding-right: $thickness;
+    border-left: $thickness solid $grey;
+    border-bottom: $thickness solid $grey;
+  }
+  #L0 {
+    top: $size + $margin + 2 * $thickness;
+    left: $margin;
+  }
+  #L1 {
+    top: $margin;
+    left: $size + $margin + 2 * $thickness;
+  }
+  #U {
+    padding-top: $thickness;
+    border-right: $thickness solid $grey;
+    border-left: $thickness solid $grey;
+    border-bottom: $thickness solid $grey;
+    border-bottom-right-radius: 50%;
+    border-bottom-left-radius: 50%;
+    top: $size + $margin + 2 * $thickness;
+    left: $size + $margin + 2 * $thickness;
+  }
+}
+#dllu:hover {
+  transform: rotate(180deg);
+  #D, #L0, #L1, #U {
+    border-color: $blue;
+  }
+  #D {
+    transform: rotate(-90deg);
+  }
+  #L0, #L1 {
+    transform: rotate(-180deg);
+  }
+  #U {
+    transform: rotate(-270deg);
+  }
+}

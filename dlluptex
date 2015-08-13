@@ -1,0 +1,7 @@
+#!/bin/bash
+cd `dirname $1`
+./svg2pdf.sh
+~/Dropbox/proj/dllup/dlluptex.py < "`basename $1`.dllu" > "index_dllu.tex"
+cp ~/Dropbox/proj/dllup/texheader.tex "`basename $1`.tex"
+pdflatex "`basename $1`.tex"
+pdflatex "`basename $1`.tex"

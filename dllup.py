@@ -140,7 +140,7 @@ def parsepics(s):
         if len(ss[1][1]) == 1 and ss[0][:4] != 'http' and ss[0][-4:] in ['.png', '.jpg']:
             pic = ss[0][:-4] + '_600' + ss[0][-4:]
         elif len(ss[1][1]) == 2:
-            # if the description contains the string " (full size: " then use that as full size
+            # if the description contains the string " (full size: %s)" then use that
             fullpic = ss[1][1][1][:-1]
         t = (fignum, fullpic, pic, ss[1][0], fignum, fignum, parsetext(ss[1][1][0]))
         out += '<figure id="fig%d"><a href="%s"><img src="%s" alt="%s"/></a><figcaption><a href="#fig%d" class="fignum">FIGURE %d</a> %s</figcaption></figure>' % t

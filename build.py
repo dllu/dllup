@@ -103,8 +103,8 @@ def recurse(path='', rootnav='', root=''):
         cpath = os.path.join(path, child)
         if os.path.isdir(cpath):
             recurse(cpath, rootnav, root)
-        if child[-4:] in RASTER_IMG:
-            #resize_images(path, child[-4:])
+        if child[-4:] in RASTER_IMG and not '_600' in child:
+            resize_images(path, child)
             pass
         elif child[-5:] == '.dllu':
             markup = open(os.path.join(path, child)).read()
@@ -143,6 +143,14 @@ def recurse(path='', rootnav='', root=''):
                 ' href="%s/' % root,
             ))
             f.close()
+
+def resize_images(path, child):
+    filename = os.path.join(path, child)
+    filename600 = os.path.join(path, child[:-4] + '_600' + child[-4:])
+    filename600x2 = os.path.join(path, child[:-4] + '_600@2x' + child[-4:])
+    for f in (filename600, filename600x2):
+        if not os.path.exists(f):
+            os.system('gm convert "%s" -resize 600 "%s"' % (filename, f))
 
 def crumbify(path):
     breadcrumbs = BREAD

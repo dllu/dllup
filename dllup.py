@@ -205,7 +205,7 @@ def typographer(s):
 
 def parsemath(s):
     filename = hashlib.sha1(s.encode('utf-8')).hexdigest() + '.svg'
-    filepath = os.path.join('site/texcache', filename)
+    filepath = os.path.join('texcache', filename)
     if not os.path.isfile(filepath):
         try:
             jax = urllib.request.urlopen('http://localhost:16000', urllib.parse.urlencode({'q':s}).encode('utf-8'))

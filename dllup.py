@@ -218,7 +218,11 @@ def parsemath(s):
         jax.close()
     jax = open(filepath).read()
     style = re.search('style=".*?"', jax)
-    return '<img src="/texcache/%s" alt="%s" %s/>' % (filename, html.escape(s), jax[style.start():style.end()])
+    height = re.search('height=".*?"', jax)
+    height = jax[height.start():height.end()]
+    height = height.replace('=', ':').replace('"', '')
+    style = jax[style.start():style.end()-1] + height + ';"'
+    return '<img src="/texcache/%s" alt="%s" %s/>' % (filename, html.escape(s), style)
 
 def highlight(s):
     firstline = s.split('\n',1)[0]
@@ -226,7 +230,11 @@ def highlight(s):
         lexer = pygments.lexers.get_lexer_by_name(firstline[5:], stripall=True)
         s = s.split('\n',1)[1]
     else:
-        lexer = pygments.lexers.guess_lexer(s)
+        lexer = None
+        try:
+            lexer = pygments.lexers.guess_lexer(s)
+        except:
+            lexer = pygments.lexers.special.TextLexer
     return pygments.highlight(s, lexer, pygments.formatters.HtmlFormatter())
 
 def main():

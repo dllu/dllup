@@ -203,11 +203,11 @@ def parsestrong(s):
     return splitparse(s, '\\*\\*', lambda x: '\\textbf{%s}' % typographer(x), typographer) 
 
 def typographer(s):
-    s = re.sub('"(\\w)', '``\\1', s)
-    s = re.sub('(\\s)"', '\\1``', s)
+    s = re.sub('(\\s)"(\\w)', '\\1``\\2', s)
     s = re.sub("(?<!\\w)'(\\w)", '`\\1', s)
-    s = re.sub("(\\s)'", '\\1`', s)
-    return escape(s.replace('"', "''"))
+    s = re.sub("(\\s)(?<!\\\\)'", '\\1`', s)
+    s = re.sub('(?<!\\\\)"', "''", s);
+    return escape(s)
 
 def parsemath(s):
     return s

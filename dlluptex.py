@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # The templating engine and the parser for the dllup markup language are hereby
 # released open-source under the MIT License.
 #
@@ -29,10 +29,6 @@ import urllib.request
 import urllib.parse
 import os
 import sys
-
-import pygments
-import pygments.lexers
-import pygments.formatters
 
 def splitparse(s, delim, yes, no):
     return ''.join([yes(ss) if i%2 == 1 else no(ss) for (i,ss) in enumerate(re.split('(?<!\\\\)'+delim, s))])

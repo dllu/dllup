@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # The templating engine and the parser for the dllup markup language are hereby
 # released open-source under the MIT License.
 #
@@ -29,6 +29,7 @@ import urllib.request
 import urllib.parse
 import os
 import sys
+import subprocess
 
 import pygments
 import pygments.lexers
@@ -208,14 +209,14 @@ def parsemath(s):
     filepath = os.path.join('texcache', filename)
     if not os.path.isfile(filepath):
         try:
-            jax = urllib.request.urlopen('http://localhost:16000', urllib.parse.urlencode({'q':s}).encode('utf-8'))
-        except:
+            p = subprocess.Popen(['tex2svg', s], stdout=subprocess.PIPE)
+            jax, errors = p.communicate()
+        except e:
             sys.stderr.write('Equation error: %s\n' % s)
             return ''
         f = open(filepath, 'w')
-        f.write(jax.read().decode('utf-8'))
+        f.write(jax.decode('utf-8'))
         f.close()
-        jax.close()
     jax = open(filepath).read()
     style = re.search('style=".*?"', jax)
     height = re.search('height=".*?"', jax)

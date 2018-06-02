@@ -5,6 +5,6 @@ This is a personal website aiming for simplicity, ease of maintenance, and suppo
 Tools used:
 
 * [SASS](http://sass-lang.com/)
-* [svgtex](https://github.com/agrbin/svgtex)
 * [jpegoptim](https://github.com/tjko/jpegoptim)
 * [optipng](http://optipng.sourceforge.net/)
+* [mathjax-node-cli](https://www.npmjs.com/package/mathjax-node-cli)

@@ -2,6 +2,8 @@
 
 This is a personal website aiming for simplicity, ease of maintenance, and support for things like LaTeX math equations.
 
+[Documentation on the syntax](https://daniel.lawrence.lu/programming/dllup/).
+
 Tools used:
 
 * [SASS](http://sass-lang.com/)

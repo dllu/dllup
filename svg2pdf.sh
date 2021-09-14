@@ -1,9 +1,9 @@
 #!/bin/bash
-for file in *.svg
-do
-    pdf="`basename ${file} .svg`.pdf"
-    if [ ! -f "$pdf" ]
-    then
+if compgen -G "*.svg"
+then
+    for file in *.svg
+    do
+        pdf="`basename ${file} .svg`.pdf"
         inkscape -z -f "${file}" -e "$pdf"
-    fi
-done
+    done
+fi

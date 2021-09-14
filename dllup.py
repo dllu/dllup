@@ -67,16 +67,15 @@ def parse(s):
         return '<header>%s<div class="toc">%s</div></header>%s' % (header, toc,
                                                                    body)
     body = parseraw(s)
-    if toc is not '':
+    if toc != '':
         return '<header><div class="toc">%s</div></header>%s' % (toc, body)
     return body
 
 
 def parseheader(s):
     s = s.strip().split('\n\n')
-    return '<h1 id="top">%s</h1>%s' % (
-        parsetext(s[0]),
-        ''.join(['<p>%s</p>' % parsetext(ss) for ss in s[1:]]))
+    return '<h1 id="top">%s</h1>%s' % (parsetext(s[0]), ''.join(
+        ['<p>%s</p>' % parsetext(ss) for ss in s[1:]]))
 
 
 def parseraw(s):
@@ -130,7 +129,7 @@ def parseblock(s):
         # equation
         eqnum += 1
         return '<div class="math" id="eq%d"><a href="#eq%d" class="eqnum">%d</a> %s</div>' % (
-            eqnum, eqnum, eqnum, parsemath('\displaystyle{%s}' % s[2:]))
+            eqnum, eqnum, eqnum, parsemath('%s' % s[2:]))
     if s[:2] == '* ':
         # list
         return parseul(s, 1)
@@ -191,16 +190,16 @@ def parsetable(s):
     global tablenum
     tablenum += 1
     rows = s.split('\n')
-    table = (tablenum, parseth(rows[0]), ''.join(
-        [parserow(row) for row in rows[1:-1]]), tablenum, tablenum,
-             parsetext(rows[-1]))
+    table = (tablenum, parseth(rows[0]),
+             ''.join([parserow(row) for row in rows[1:-1]
+                      ]), tablenum, tablenum, parsetext(rows[-1]))
     return '<figure id="table%d"><table>%s%s</table><figcaption><a href="#table%d" class="fignum">Table %d</a> %s</figcaption></figure>' % table
 
 
 def parseth(s):
     return '<tr>%s</tr>' % ''.join([
-        '<th>%s</th>' % parsetext(th) for th in s.split('|')
-        if th.strip() is not ''
+        '<th>%s</th>' % parsetext(th)
+        for th in s.split('|') if th.strip() != ''
     ])
 
 
@@ -208,8 +207,8 @@ def parserow(s):
     if re.match('^(\\||\\s|\\-)*$', s) is not None:
         return ''
     return '<tr>%s</tr>' % ''.join([
-        '<td>%s</td>' % parsetext(td) for td in s.split('|')
-        if td.strip() is not ''
+        '<td>%s</td>' % parsetext(td)
+        for td in s.split('|') if td.strip() != ''
     ])
 
 
@@ -266,33 +265,42 @@ def typographer(s):
                 "'", '’').replace('...', '…')))
 
 
+greekbm = re.compile(r'\\bm ?\\(0|1|alpha|beta|gamma|delta|epsilon|lambda|mu|nu|sigma|xi|zeta|omega|eta|theta|kappa|omicron|pi|rho|tau|upsilon|phi|psi|chi|Alpha|Beta|Gamma|Delta|Epsilon|Lambda|Mu|Nu|Sigma|Xi|Zeta|Omega|Eta|Theta|Kappa|Omicron|Pi|Rho|Tau|Upsilon|Phi|Psi|Chi)')
 def parsemath(s, inline=False):
     shash = hashlib.sha1(s.encode('utf-8')).hexdigest()
     if inline:
         shash += 'i'
+    elif '\\begin{align}' not in s:
+        s = '\displaystyle{\\begin{align}' + s + '\\end{align}}'
     filename = shash + '.svg'
     filepath = os.path.join('texcache', filename)
-    if not os.path.isfile(filepath):
-        try:
-            mathjaxargs = ['tex2svg', s]
+
+    s = re.sub(greekbm, r'\\boldsymbol{\\\1}', s)
+    try:
+        if not os.path.isfile(filepath) or os.path.getsize(filepath) == 0:
+            # extra space so that it won't be treated as an option if starting with '-'
+            mathjaxargs = ['tex2svg', ' ' + s]
             if inline:
                 mathjaxargs.append('--inline')
             p = subprocess.Popen(mathjaxargs, stdout=subprocess.PIPE)
             jax, errors = p.communicate()
-        except e:
-            sys.stderr.write('Equation error: %s\n' % s)
-            return ''
-        f = open(filepath, 'w')
-        f.write(jax.decode('utf-8'))
-        f.close()
-    jax = open(filepath).read()
-    style = re.search('style=".*?"', jax)
-    height = re.search('height=".*?"', jax)
-    height = jax[height.start():height.end()]
-    height = height.replace('=', ':').replace('"', '')
-    style = jax[style.start():style.end() - 1] + height + ';"'
-    return '<img src="texcache/%s" alt="%s" %s/>' % (filename, html.escape(s),
-                                                     style)
+            if errors:
+                sys.stderr.write('Equation error: {}\n', errors)
+            else:
+                f = open(filepath, 'w')
+                f.write(jax.decode('utf-8'))
+                f.close()
+        jax = open(filepath).read()
+        style = re.search('style=".*?"', jax)
+        height = re.search('height=".*?"', jax)
+        height = jax[height.start():height.end()]
+        height = height.replace('=', ':').replace('"', '')
+        style = jax[style.start():style.end() - 1] + height + ';"'
+        return '<img src="/texcache/%s" alt="%s" %s/>' % (
+            filename, html.escape(s), style)
+    except Exception as e:
+        sys.stderr.write('Equation error: {}\n{}\n'.format(s, e))
+        return ''
 
 
 def highlight(s):

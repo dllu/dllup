@@ -1,9 +1,16 @@
 #!/bin/bash
-cd `dirname $1`
-~/scripts/svg2pdf.sh
-~/sync/proj/dllup/dlluptex.py < "`basename $1`.dllu" > "index_dllu.tex"
+set -euxo pipefail
+pushd `dirname $1`
+dllupfolder=`dirname $0`
+$dllupfolder/svg2pdf.sh
+$dllupfolder/dlluptex.py < "`basename $1`.dllu" > "index_dllu.tex"
 if [ ! -f "`basename $1`.tex" ]
 then
-    cp ~/sync/proj/dllup/texheader.tex "`basename $1`.tex"
+    cp $dllupfolder/texheader.tex "`basename $1`.tex"
 fi
-pdflatex "`basename $1`.tex" && pdflatex "`basename $1`.tex"
+
+if [ -z ${2+x} ]; then tex=xelatex; else tex=$2; fi
+$tex -halt-on-error "`basename $1`.tex"
+$tex -halt-on-error "`basename $1`.tex"
+echo $?
+popd

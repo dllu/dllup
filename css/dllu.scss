@@ -38,7 +38,7 @@ nav {
     max-width: 600px;
     margin: 20px auto;
 }
-article nav {
+main nav {
     width: 100%;
 }
 
@@ -182,7 +182,7 @@ nav#blogposts {
     }
 }
 
-article {
+main {
     width: 80%;
     max-width: 600px;
     margin: 0 auto;
@@ -443,7 +443,7 @@ article {
 }
 
 @media all and (min-width: 1200px) {
-    article {
+    main {
         figcaption {
             position: absolute;
             top: 0px;
@@ -471,7 +471,7 @@ article {
 }
 
 @media all and (max-width: 1199px) {
-    article {
+    main {
         figcaption {
             position: relative;
             padding: 1em 2em;

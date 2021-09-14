@@ -127,8 +127,15 @@ def recurse(path='', rootnav='', root=''):
             if path == '.':
                 PP = PAGE_HERO
 
+            ss = markup.split('\n===\n', 1)
+            if len(ss) > 1:
+                title = ss[0].strip()
+            else:
+                title = path.split('/')[-1]
+            head = htmlhead.format(title=title)
+
             f.write(
-                PP.format(htmlhead=htmlhead,
+                PP.format(htmlhead=head,
                           htmlfoot=htmlfoot,
                           breadcrumbs=breadcrumbs,
                           rootnav=rootnav,

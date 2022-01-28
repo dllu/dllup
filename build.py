@@ -160,8 +160,11 @@ def resize_images(path, child):
     filename600 = os.path.join(path, child[:-4] + '_600' + child[-4:])
     filename600x2 = os.path.join(path, child[:-4] + '_600@2x' + child[-4:])
     for f in (filename600, filename600x2):
+        scale = 600
+        if '@2x' in f:
+            scale = 1200
         if not os.path.exists(f):
-            os.system('gm convert "%s" -resize 600 "%s"' % (filename, f))
+            os.system(f'gm convert "{filename}" -resize {scale} "{f}"')
 
 
 def crumbify(path):

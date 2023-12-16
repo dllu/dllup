@@ -28,49 +28,48 @@ import os
 import re
 import struct
 import time
+from pathlib import Path
 from operator import itemgetter
 
 RASTER_IMG = [".png", ".jpg"]
 # navigation markup
-PORTFOLIO_NAV = '<a href="{child}/"><figure><img src="{pic}" alt="{child}"/><figcaption>{title} ({subtitle})</figcaption></figure></a>'
-BLOG_NAV = '<a href="{child}/"><span class="blogdate">{date}</span><span class="blogtitle">{title}</span></a>'
-ROOT_NAV = '<a href="/{child}/">{child}</a>'
+PORTFOLIO_NAV = '<a href="{child}"><figure><img src="{pic}" alt="{child_name}"/><figcaption>{title} ({subtitle})</figcaption></figure></a>'
+BLOG_NAV = '<a href="{child}"><span class="blogdate">{date}</span><span class="blogtitle">{title}</span></a>'
+ROOT_NAV = '<a href="{child}">{child_name}</a>'
 # the first breadcrumb
 BREAD = '<a href="/"><span id="dllu"><span style="display:none;">dllu</span><span id="D"></span><span id="L0"></span><span id="L1"></span><span id="U"></span></span></a><span>/</span>'
 BREAD_HERO = '<a href="/" id="hero-a"><span id="dllu-hero"><span style="display:none;">dllu</span><span id="D"></span><span id="L0"></span><span id="L1"></span><span id="U"></span></span></a>'
 # all consecutive breadcrumbs
-CRUMB = '<a href="{cpath}">{child}</a><span>/</span>'
+CRUMB = '<a href="{child}">{child}</a><span>/</span>'
 
 # page markup
 PAGE = '<!DOCTYPE html>\n{sig}\n{htmlhead}<nav id="breadcrumbs">{breadcrumbs}</nav><nav id="rootnav">{rootnav}</nav><nav id="{navtype}">{nav}</nav><main>{output}<footer><p>&copy; Daniel Lawrence Lu. Page generated on {time} by <a href="/programming/dllup/">dllup</a>. (<a href="{text}">text version</a>)</footer></main>{htmlfoot}'
 PAGE_HERO = PAGE.replace('id="breadcrumbs"', 'id="hero"')
 
 
-def readconfig(configpath):
+def readconfig(configpath: Path):
     # Reads a config file which is a simple text file of key-value pairs.
     # One key-value pair per line, key (no whitespaces) is separated from
     # value by whitespace.
     # Valid keys are: type, root
-    if not os.path.exists(configpath):
+    if not configpath.exists():
         return {}
     config = open(configpath).read()
     configsplit = [cc.split(None, 1) for cc in config.split("\n")]
     return {c[0]: c[1] for c in configsplit if len(c) >= 2}
 
 
-def recurse(path="", rootnav="", root=""):
+def recurse(path: Path = Path(), rootnav="", root=""):
     global htmlhead
     global htmlfoot
-    children = os.listdir(path)
-    folderdata = [
-        get_folderdata(os.path.join(path, c))
-        for c in children
-        if os.path.isdir(os.path.join(path, c))
-    ]
-    config = readconfig(os.path.join(path, "config"))
+    children = list(path.iterdir())
+    folderdata = [get_folderdata(c) for c in children if c.is_dir()]
+
+    config = readconfig(path / "config")
     if "root" in config:
         root = config["root"]
     navtype = config["type"] if "type" in config else None
+
     # generate navigation markup
     nav = ""
     if navtype == "blogposts":
@@ -91,6 +90,7 @@ def recurse(path="", rootnav="", root=""):
         )
     for f in folderdata:
         try:
+            f["child"] = f'{root}/{f["child"]}'
             if navtype == "root":
                 rootnav += ROOT_NAV.format(**f)
             elif navtype == "blogposts":
@@ -100,24 +100,24 @@ def recurse(path="", rootnav="", root=""):
         except KeyError:
             pass  # ignore folders without complete data
 
-    breadcrumbs = crumbify(path)
+    breadcrumbs = generate_breadcrumbs(path)
     # recurse through children
     for child in children:
-        cpath = os.path.join(path, child)
-        if os.path.isdir(cpath):
-            recurse(cpath, rootnav, root)
-        if child[-4:] in RASTER_IMG and "_600" not in child:
+        if child.is_dir():
+            recurse(child, rootnav, root)
+        if child.suffix in RASTER_IMG and "_600" not in child.name:
             resize_images(path, child)
             pass
-        elif child[-5:] == ".dllu":
-            markup = open(os.path.join(path, child)).read()
+        elif child.suffix == ".dllu":
+            with open(child) as o:
+                markup = o.read()
             hash = hashlib.sha1(
-                struct.pack("f", os.path.getmtime(cpath)) + b"asdf"
+                struct.pack("f", child.stat().st_mtime) + b"dllu"
             ).hexdigest()
             sig = f"<!--{hash}-->"
             sig2 = None
             try:
-                with open(os.path.join(path, child[:-5] + ".html")) as f:
+                with open(path / (child.stem + ".html")) as f:
                     f.readline()
                     sig2 = f.readline()
             except FileNotFoundError:
@@ -126,45 +126,47 @@ def recurse(path="", rootnav="", root=""):
                 continue
 
             output, metas = dllup.parse(markup)
-            f = open(os.path.join(path, child[:-5] + ".html"), "w")
             PP = PAGE
-            if path == ".":
+            if path == Path():
                 PP = PAGE_HERO
 
             ss = markup.split("\n===\n", 1)
             if len(ss) > 1:
                 title = ss[0].strip()
             else:
-                title = path.split("/")[-1]
+                title = child.name
 
             metas["title"] = title
+            if "image" in metas:
+                if metas["image"][:7] != "http://" and metas["image"][:8] != "https://":
+                    metas["image"] = f'{root}/{path}/{metas["image"]}'
             meta_html = format_meta(metas)
             head = htmlhead.format(title=title, metas=meta_html)
 
-            f.write(
-                PP.format(
-                    htmlhead=head,
-                    htmlfoot=htmlfoot,
-                    breadcrumbs=breadcrumbs,
-                    rootnav=rootnav,
-                    navtype=navtype,
-                    output=output,
-                    time=time.strftime("%Y-%m-%d", time.gmtime()),
-                    child=child,
-                    nav=nav,
-                    sig=sig,
-                    text=child,
+            with open(path / (child.stem + ".html"), "w") as f:
+                f.write(
+                    PP.format(
+                        htmlhead=head,
+                        htmlfoot=htmlfoot,
+                        breadcrumbs=breadcrumbs,
+                        rootnav=rootnav,
+                        navtype=navtype,
+                        output=output,
+                        time=time.strftime("%Y-%m-%d", time.gmtime()),
+                        child=child,
+                        nav=nav,
+                        sig=sig,
+                        text=child,
+                    )
+                    .replace(
+                        ' src="/',
+                        f' src="{root}/',
+                    )
+                    .replace(
+                        ' href="/',
+                        f' href="{root}/',
+                    )
                 )
-                .replace(
-                    ' src="/',
-                    f' src="{root}/',
-                )
-                .replace(
-                    ' href="/',
-                    f' href="{root}/',
-                )
-            )
-            f.close()
 
 
 def format_meta(metas):
@@ -177,34 +179,35 @@ def format_meta(metas):
 
 
 def resize_images(path, child):
-    filename = os.path.join(path, child)
-    filename600 = os.path.join(path, child[:-4] + "_600" + child[-4:])
-    filename600x2 = os.path.join(path, child[:-4] + "_600@2x" + child[-4:])
+    filename = path / child
+    filename600 = path / (filename.stem + "_600" + filename.suffix)
+    filename600x2 = path / (filename.stem + "_600@2x" + filename.suffix)
     for f in (filename600, filename600x2):
         scale = 600
-        if "@2x" in f:
+        if "@2x" in f.stem:
             scale = 1200
-        if not os.path.exists(f):
+        if not f.exists():
             os.system(f'gm convert "{filename}" -resize {scale} "{f}"')
 
 
-def crumbify(path):
-    if path == ".":
+def generate_breadcrumbs(path):
+    if path == Path():
         return BREAD_HERO
     breadcrumbs = BREAD
     crumbs = "/"
-    for crumb in path.split("/")[1:]:
+    for crumb in path.parts[1:]:
         crumbs += crumb + "/"
         breadcrumbs += CRUMB.format(cpath=crumbs, child=crumb)
     return breadcrumbs
 
 
 def get_folderdata(path):
-    if os.path.exists(os.path.join(path, "private")):
+    if (path / "private").exists():
         return {}
-    folderdata = {"child": os.path.split(path)[1]}
-    index = os.path.join(path, "index.dllu")
-    if os.path.exists(index):
+
+    folderdata = {"child": path}
+    index = path / "index.dllu"
+    if index.exists():
         content = open(index).read().split("\n===\n", 1)[0]
         content = [d for d in content.split("\n") if d.strip() != ""]
         if len(content) >= 1:
@@ -214,22 +217,27 @@ def get_folderdata(path):
     else:
         return {}
     for extension in RASTER_IMG:
-        if os.path.exists(path + extension):
-            folderdata["pic"] = os.path.split(path)[1] + extension
-    if re.match(r"y\d\d\d\dm\d\dd\d\d", os.path.split(path)[1]):
-        folderdata["date"] = re.sub("m|d", "-", os.path.split(path)[1][1:])
+        if (path.parent / (path.name + extension)).exists():
+            folderdata["pic"] = path.name + extension
+    if re.match(r"y\d\d\d\dm\d\dd\d\d", path.name):
+        folderdata["date"] = re.sub("m|d", "-", path.name[1:])
+
+    folderdata["child_name"] = path.name
+
     return folderdata
 
 
 def main():
     global htmlhead, htmlfoot
-    htmlhead = open("html/head.html").read()
-    htmlfoot = open("html/foot.html").read()
+    with open("html/head.html") as f:
+        htmlhead = f.read()
+    with open("html/foot.html") as f:
+        htmlfoot = f.read()
     hash = hashlib.sha1(struct.pack("f", os.path.getmtime("css"))).hexdigest()
     cssname = f"dllu-{hash}.css"
     os.system(f"sassc -t compressed css/dllu.scss > {cssname}")
     htmlhead = htmlhead.replace("dllu.css", cssname)
-    recurse(".")
+    recurse()
 
 
 if __name__ == "__main__":

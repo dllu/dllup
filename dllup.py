@@ -28,6 +28,7 @@ import hashlib
 import os
 import sys
 import subprocess
+from bs4 import BeautifulSoup
 
 import pygments
 import pygments.lexers
@@ -154,14 +155,10 @@ def parseblock(s):
         s = s[3:].rsplit(" ", 1)
         return '<p><a href="{}" class="bigbutton">{}</a></p>'.format(s[1], s[0])
 
+    output = parsetext(s)
     if "description" not in metas:
-        metas["description"] = first_sentence(s)
-    return "<p>%s</p>" % (parsetext(s))
-
-
-def first_sentence(s):
-    s = " ".join(s.split("\n"))
-    return s.split(". ")[0] + "."
+        metas["description"] = BeautifulSoup(output, "html.parser").get_text()
+    return f"<p>{output}</p>"
 
 
 def parsepics(s):

@@ -22,32 +22,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import html
 import re
-import hashlib
-import urllib.request
-import urllib.parse
 import os
-import sys
 
 
 def splitparse(s, delim, yes, no):
-    return ''.join([
-        yes(ss) if i % 2 == 1 else no(ss)
-        for (i, ss) in enumerate(re.split('(?<!\\\\)' + delim, s))
-    ])
+    return "".join(
+        [
+            yes(ss) if i % 2 == 1 else no(ss)
+            for (i, ss) in enumerate(re.split("(?<!\\\\)" + delim, s))
+        ]
+    )
 
 
 def escape(s):
-    latextable = [('_', r'\_'), ('&', r'\&'),
-                  ('%', r'\%'), ('#', r'\#')]
+    latextable = [("_", r"\_"), ("&", r"\&"), ("%", r"\%"), ("#", r"\#")]
     for k, v in latextable:
         s = s.replace(k, v)
     return s
 
 
 def parse(s):
-    s = s.replace('\r', '')
+    s = s.replace("\r", "")
     global hnum
     global fignum
     global tablenum
@@ -57,35 +53,38 @@ def parse(s):
     fignum = 0
     tablenum = 0
     eqnum = 0
-    ss = s.split('\n===\n', 1)
+    ss = s.split("\n===\n", 1)
     if len(ss) > 1:
         header = parseheader(ss[0])
         body = parseraw(ss[1])
-        return '\\title{%s}\n\\maketitle\n%s' % (header, body)
+        return "\\title{{{}}}\n\\maketitle\n{}".format(header, body)
     body = parseraw(s)
     return body
 
 
 def parseheader(s):
-    return s.strip().replace('\n\n', '\n').replace('\n', '\\\\')
+    return s.strip().replace("\n\n", "\n").replace("\n", "\\\\")
 
 
 def parseraw(s):
-    return splitparse(s, '\n\\?\\?\\?\n', lambda x: '%s' % x, parsecode)
+    return splitparse(s, "\n\\?\\?\\?\n", lambda x: "%s" % x, parsecode)
 
 
 def parsecode(s):
-    return splitparse(s, '\n~~~\n', highlight, parsecode2)
+    return splitparse(s, "\n~~~\n", highlight, parsecode2)
 
 
 def parsecode2(s):
     return splitparse(
-        s, '\n~~~~\n', lambda x: '\\begin{lstlisting}\n%s\n\\end{lstlisting}\n'
-        % x, parsenormal)
+        s,
+        "\n~~~~\n",
+        lambda x: "\\begin{lstlisting}\n%s\n\\end{lstlisting}\n" % x,
+        parsenormal,
+    )
 
 
 def parsenormal(s):
-    return ''.join(parseblock(ss) for ss in s.strip().split('\n\n'))
+    return "".join(parseblock(ss) for ss in s.strip().split("\n\n"))
 
 
 def parseblock(s):
@@ -93,165 +92,177 @@ def parseblock(s):
     global eqnum
     global toc
     if len(s.split()) == 0:
-        return ''
+        return ""
     for h in range(3, 0, -1):
         # header
-        if s[:h] == '#' * h:
+        if s[:h] == "#" * h:
             hnum[h - 1] += 1
             for j in range(h, 6):
                 if hnum[j] > 0:
                     hnum[j] = 0
-            hh = '.'.join([str(jj) for jj in hnum[:h]])
+            hh = ".".join([str(jj) for jj in hnum[:h]])
             hhh = parsetext(s[h:])
-            return '\\%ssection{%s}\n\\label{s%s}\n' % ('sub' *
-                                                        (h - 1), hhh, hh)
-    if s[:2] == '> ':
+            return "\\{}section{{{}}}\n\\label{{s{}}}\n".format(
+                "sub" * (h - 1), hhh, hh
+            )
+    if s[:2] == "> ":
         # blockquote
-        return '\\begin{quote}\n%s\\end{quote}\n' % parsetext(s[2:])
-    if s[:4] == 'pic ':
+        return "\\begin{quote}\n%s\\end{quote}\n" % parsetext(s[2:])
+    if s[:4] == "pic ":
         # images
         return parsepics(s)
-    if s[:2] == '$ ':
+    if s[:2] == "$ ":
         # equation
         eqnum += 1
-        return '\\begin{align}\n%s\\end{align}\n' % (parsemath(s[2:]))
-    if s[:4] == '* [#':
+        return "\\begin{align}\n%s\\end{align}\n" % (parsemath(s[2:]))
+    if s[:4] == "* [#":
         # bibliography
         return parsebib(s)
-    if s[:2] == '* ':
+    if s[:2] == "* ":
         # list
         return parseul(s, 1)
-    if s[:3] == '1. ':
+    if s[:3] == "1. ":
         # numbered list
-        return '\\begin{enumerate}\n%s\\end{enumerate}\n' % parseol(s)
-    if s[:2] == '| ':
+        return "\\begin{enumerate}\n%s\\end{enumerate}\n" % parseol(s)
+    if s[:2] == "| ":
         # table
         return parsetable(s)
-    if s[:3] == ':: ':
+    if s[:3] == ":: ":
         # big button
-        s = s[3:].rsplit(' ', 1)
-        return '\\begin{center}\\huge \\href{%s}{%s}\\end{center}\n' % (s[1],
-                                                                        s[0])
-    return '\\par %s\n' % (parsetext(s))
+        s = s[3:].rsplit(" ", 1)
+        return "\\begin{{center}}\\huge \\href{{{}}}{{{}}}\\end{{center}}\n".format(
+            s[1], s[0]
+        )
+    return "\\par %s\n" % (parsetext(s))
 
 
 def parsepics(s):
     global fignum
-    lines = [ss[4:].split(None, 1) for ss in s.split('\n')]
-    out = ''
+    lines = [ss[4:].split(None, 1) for ss in s.split("\n")]
+    out = ""
     for ss in lines:
         fignum += 1
-        ss[1] = ss[1].split(': ', 1)
+        ss[1] = ss[1].split(": ", 1)
         pic = ss[0]
-        if pic[:4] == 'http':
-            if not os.path.isfile(pic.split('/')[-1]):
-                os.system('wget %s' % pic)
-            pic = pic.split('/')[-1]
-        if pic[-4:] == '.svg':
-            pic = pic[:-4] + '.pdf'
+        if pic[:4] == "http":
+            if not os.path.isfile(pic.split("/")[-1]):
+                os.system("wget %s" % pic)
+            pic = pic.split("/")[-1]
+        if pic[-4:] == ".svg":
+            pic = pic[:-4] + ".pdf"
         t = (pic, parsetext(ss[1][1]))
-        out += '\\begin{figure}[!htb]\n\\centering\n\\includegraphics[width=0.7\\columnwidth]{%s}\n\\caption{\\small %s}\n\\end{figure}\n' % t
+        out += (
+            "\\begin{figure}[!htb]\n\\centering\n\\includegraphics[width=0.7\\columnwidth]{%s}\n\\caption{\\small %s}\n\\end{figure}\n"
+            % t
+        )
     return out
 
 
 def parseul(s, level):
-    s = '\n' + s
-    items = [ss.strip() for ss in ('\n' + s).split('\n' + '*' * level + ' ')]
+    s = "\n" + s
+    items = [ss.strip() for ss in ("\n" + s).split("\n" + "*" * level + " ")]
     out = parsetext(items[0])
     if len(items) > 1:
-        out += '\\begin{itemize}%s\\end{itemize}\n' % ''.join(
-            ['\\item %s\n' % parseul(item, level + 1) for item in items[1:]])
+        out += "\\begin{itemize}%s\\end{itemize}\n" % "".join(
+            ["\\item %s\n" % parseul(item, level + 1) for item in items[1:]]
+        )
     return out
 
 
 def parsebib(s):
-    return '\\begin{thebibliography}{99}\n%s\n\\end{thebibliography}' % '\n'.join(
-        parsetext('[#' + ss.split('[#')[1]) for ss in s.split('\n*'))
+    return "\\begin{thebibliography}{99}\n%s\n\\end{thebibliography}" % "\n".join(
+        parsetext("[#" + ss.split("[#")[1]) for ss in s.split("\n*")
+    )
 
 
 def parseol(s):
-    return ''.join(
-        ['\item %s\n' % parsetext(ss) for ss in re.split('\n\\d+\\. ', s[2:])])
+    return "".join(
+        ["\\item %s\n" % parsetext(ss) for ss in re.split("\n\\d+\\. ", s[2:])]
+    )
 
 
 def parsetable(s):
     global tablenum
     tablenum += 1
-    rows = s.split('\n')
+    rows = s.split("\n")
     th = parseth(rows[0])
-    trows = ''.join([parserow(row) for row in rows[1:-1]])
-    ccc = 'c' * (len(rows[0]))
+    trows = "".join([parserow(row) for row in rows[1:-1]])
+    ccc = "c" * (len(rows[0]))
     table = (ccc, th, trows, parsetext(rows[-1]), tablenum)
-    return '\\begin{table}[!ht]\n\\centering\n\\begin{tabu}{%s}\n%s%s\\end{tabu}\n\\caption{%s}\n\\label{table%d}\\end{table}' % table
+    return (
+        "\\begin{table}[!ht]\n\\centering\n\\begin{tabu}{%s}\n%s%s\\end{tabu}\n\\caption{%s}\n\\label{table%d}\\end{table}"
+        % table
+    )
 
 
 def parseth(s):
-    return '%s\\\\ \\hline\n' % ' & '.join([
-        '\\bf %s' % parsetext(th)
-        for th in s.split('|') if th.strip() is not ''
-    ])
+    return "%s\\\\ \\hline\n" % " & ".join(
+        ["\\bf %s" % parsetext(th) for th in s.split("|") if th.strip() != ""]
+    )
 
 
 def parserow(s):
-    if re.match('^(\\||\\s|\\-)*$', s) is not None:
-        return ''
-    return '%s\\\\ \\hline\n' % ' & '.join(
-        ['%s' % parsecell(td) for td in s.split('|') if td.strip() is not ''])
+    if re.match("^(\\||\\s|\\-)*$", s) is not None:
+        return ""
+    return "%s\\\\ \\hline\n" % " & ".join(
+        ["%s" % parsecell(td) for td in s.split("|") if td.strip() != ""]
+    )
 
 
 def parsecell(s):
-    if '\\n' in s:
-        cell_contents = '\\\\'.join(parsetext(td) for td in s.split('\\n'))
-        return r'\begin{tabular}[]{@{}c@{}}' + cell_contents + '\end{tabular}'
+    if "\\n" in s:
+        cell_contents = "\\\\".join(parsetext(td) for td in s.split("\\n"))
+        return r"\begin{tabular}[]{@{}c@{}}" + cell_contents + r"\end{tabular}"
     else:
         return parsetext(s)
 
 
 def parsetext(s):
-    return splitparse(s.strip(), '`', lambda x: '\\texttt{%s}' % escape(x),
-                      parsetext2)
+    return splitparse(s.strip(), "`", lambda x: "\\texttt{%s}" % escape(x), parsetext2)
 
 
 def parsetext2(s):
-    return splitparse(s, '\\$', lambda x: '$%s$' % parsemath(x), parselink)
+    return splitparse(s, "\\$", lambda x: "$%s$" % parsemath(x), parselink)
 
 
 def parselink(s):
     return parseref(
-        re.sub('\\[([^\\]]+)\\]\\(([^)]+)\\)',
-               '\n~~~\n\\\\href{\\2}{\n~~~\n\\1\n~~~\n}\n~~~\n', s))
+        re.sub(
+            "\\[([^\\]]+)\\]\\(([^)]+)\\)",
+            "\n~~~\n\\\\href{\\2}{\n~~~\n\\1\n~~~\n}\n~~~\n",
+            s,
+        )
+    )
 
 
 def parseref(s):
-    return parsecite(
-        re.sub('\\[\\#([^\\]]+)\\]', '\n~~~\n\\\\bibitem{\\1}\n~~~\n', s))
+    return parsecite(re.sub("\\[\\#([^\\]]+)\\]", "\n~~~\n\\\\bibitem{\\1}\n~~~\n", s))
 
 
 def parsecite(s):
-    s = re.sub('\\(\\#([a-z]+)([0-9\\.]+)\\)',
-               '\n~~~\n\\1~\\\\ref{\\1\\2}\n~~~\n', s)
-    s = re.sub('\\(\\#([^\\)]+)\\)', '\n~~~\n\\\\cite{\\1}\n~~~\n', s)
+    s = re.sub("\\(\\#([a-z]+)([0-9\\.]+)\\)", "\n~~~\n\\1~\\\\ref{\\1\\2}\n~~~\n", s)
+    s = re.sub("\\(\\#([^\\)]+)\\)", "\n~~~\n\\\\cite{\\1}\n~~~\n", s)
     return parsespan(s)
 
 
 def parsespan(s):
-    return splitparse(s, '\n~~~\n', lambda x: x, parseem)
+    return splitparse(s, "\n~~~\n", lambda x: x, parseem)
 
 
 def parseem(s):
-    return splitparse(s, '_', lambda x: '\\emph{%s}' % typographer(x),
-                      parsestrong)
+    return splitparse(s, "_", lambda x: "\\emph{%s}" % typographer(x), parsestrong)
 
 
 def parsestrong(s):
-    return splitparse(s, '\\*\\*', lambda x: '\\textbf{%s}' % typographer(x),
-                      typographer)
+    return splitparse(
+        s, "\\*\\*", lambda x: "\\textbf{%s}" % typographer(x), typographer
+    )
 
 
 def typographer(s):
-    s = re.sub('(\\s)"(\\w)', '\\1``\\2', s)
-    s = re.sub("(?<!\\w)'(\\w)", '`\\1', s)
-    s = re.sub("(\\s)(?<!\\\\)'", '\\1`', s)
+    s = re.sub('(\\s)"(\\w)', "\\1``\\2", s)
+    s = re.sub("(?<!\\w)'(\\w)", "`\\1", s)
+    s = re.sub("(\\s)(?<!\\\\)'", "\\1`", s)
     s = re.sub('(?<!\\\\)"', "''", s)
     return escape(s)
 
@@ -261,25 +272,25 @@ def parsemath(s):
 
 
 def highlight(s):
-    firstline = s.split('\n', 1)[0]
-    output = '\\begin{lstlisting}'
-    if firstline[:5] == 'lang ':
-        output += '[language=' + firstline[5:] + ']'
-        s = s.split('\n', 1)[1]
-    return output + '\n' + s + '\n\\end{lstlisting}\n'
+    firstline = s.split("\n", 1)[0]
+    output = "\\begin{lstlisting}"
+    if firstline[:5] == "lang ":
+        output += "[language=" + firstline[5:] + "]"
+        s = s.split("\n", 1)[1]
+    return output + "\n" + s + "\n\\end{lstlisting}\n"
 
 
 def main():
-    s = ''
+    s = ""
     while True:
         try:
-            s += input() + '\n'
+            s += input() + "\n"
         except EOFError:
             break
-    print('% LaTeX document generated using dllup.')
-    print('% https://daniel.lawrence.lu/programming/dllup/')
+    print("% LaTeX document generated using dllup.")
+    print("% https://daniel.lawrence.lu/programming/dllup/")
     print(parse(s))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

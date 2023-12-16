@@ -25,8 +25,6 @@
 import html
 import re
 import hashlib
-import urllib.request
-import urllib.parse
 import os
 import sys
 import subprocess
@@ -37,62 +35,68 @@ import pygments.formatters
 
 
 def splitparse(s, delim, yes, no):
-    return ''.join([
-        yes(ss) if i % 2 == 1 else no(ss)
-        for (i, ss) in enumerate(re.split('(?<!\\\\)' + delim, s))
-    ])
+    return "".join(
+        [
+            yes(ss) if i % 2 == 1 else no(ss)
+            for (i, ss) in enumerate(re.split("(?<!\\\\)" + delim, s))
+        ]
+    )
 
 
 def unescape(s):
-    return re.sub('(?<!\\\\)\\\\', '', s)
+    return re.sub("(?<!\\\\)\\\\", "", s)
 
 
 def parse(s):
-    s = s.replace('\r', '')
+    s = s.replace("\r", "")
     global hnum
     global fignum
     global tablenum
     global eqnum
     global toc
+    global metas
     hnum = [0] * 6
     fignum = 0
     tablenum = 0
     eqnum = 0
-    toc = ''
-    ss = s.split('\n===\n', 1)
+    toc = ""
+    metas = {}
+    ss = s.split("\n===\n", 1)
     if len(ss) > 1:
         header = parseheader(ss[0])
         body = parseraw(ss[1])
-        toc += ''.join(['</ol>' for hh in hnum if hh > 0])
-        return '<header>%s<div class="toc">%s</div></header>%s' % (header, toc,
-                                                                   body)
+        toc += "".join(["</ol>" for hh in hnum if hh > 0])
+        return f'<header>{header}<div class="toc">{toc}</div></header>{body}', metas
     body = parseraw(s)
-    if toc != '':
-        return '<header><div class="toc">%s</div></header>%s' % (toc, body)
-    return body
+    if toc != "":
+        return f'<header><div class="toc">{toc}</div></header>{body}'
+    return body, metas
 
 
 def parseheader(s):
-    s = s.strip().split('\n\n')
-    return '<h1 id="top">%s</h1>%s' % (parsetext(s[0]), ''.join(
-        ['<p>%s</p>' % parsetext(ss) for ss in s[1:]]))
+    s = s.strip().split("\n\n")
+    return '<h1 id="top">{}</h1>{}'.format(
+        parsetext(s[0]),
+        "".join(["<p>%s</p>" % parsetext(ss) for ss in s[1:]]),
+    )
 
 
 def parseraw(s):
-    return splitparse(s, '\n\\?\\?\\?\n', lambda x: '%s' % x, parsecode)
+    return splitparse(s, "\n\\?\\?\\?\n", lambda x: "%s" % x, parsecode)
 
 
 def parsecode(s):
-    return splitparse(s, '\n~~~\n', highlight, parsecode2)
+    return splitparse(s, "\n~~~\n", highlight, parsecode2)
 
 
 def parsecode2(s):
-    return splitparse(s, '\n~~~~\n',
-                      lambda x: '<pre>%s</pre>' % html.escape(x), parsenormal)
+    return splitparse(
+        s, "\n~~~~\n", lambda x: "<pre>%s</pre>" % html.escape(x), parsenormal
+    )
 
 
 def parsenormal(s):
-    return ''.join(parseblock(ss) for ss in s.strip().split('\n\n'))
+    return "".join(parseblock(ss) for ss in s.strip().split("\n\n"))
 
 
 def parseblock(s):
@@ -100,232 +104,282 @@ def parseblock(s):
     global eqnum
     global toc
     if len(s.split()) == 0:
-        return ''
+        return ""
     for h in range(6, 0, -1):
         # header
-        if s[:h] == '#' * h:
+        if s[:h] == "#" * h:
             if hnum[h - 1] == 0:
-                toc += '<ol>'
+                toc += "<ol>"
             hnum[h - 1] += 1
             for j in range(h, 6):
                 if hnum[j] > 0:
-                    toc += '</ol></li>'
+                    toc += "</ol></li>"
                     hnum[j] = 0
             if hnum[h] > 0:
-                toc += '</li>'
-            hh = '.'.join([str(jj) for jj in hnum[:h]])
+                toc += "</li>"
+            hh = ".".join([str(jj) for jj in hnum[:h]])
             hhh = parsetext(s[h:])
-            toc += '<li><a href="#s%s"><span class="tocnum">%s</span> <span>%s</span></a>' % (
-                hh, hh, hhh)
-            return '<h%d id="s%s"><a href="#s%s" class="hnum">%s</a> <span>%s</span></h%d>' % (
-                h, hh, hh, hh, hhh, h)
-    if s[:2] == '> ':
+            toc += (
+                '<li><a href="#s%s"><span class="tocnum">%s</span> <span>%s</span></a>'
+                % (hh, hh, hhh)
+            )
+            return (
+                '<h%d id="s%s"><a href="#s%s" class="hnum">%s</a> <span>%s</span></h%d>'
+                % (h, hh, hh, hh, hhh, h)
+            )
+    if s[:2] == "> ":
         # blockquote
-        return '<blockquote>%s</blockquote>' % parsetext(s[2:])
-    if s[:4] == 'pic ':
+        return "<blockquote>%s</blockquote>" % parsetext(s[2:])
+    if s[:4] == "pic ":
         # images
         return '<div class="pics">%s</div>' % parsepics(s)
-    if s[:2] == '$ ':
+    if s[:2] == "$ ":
         # equation
         eqnum += 1
-        return '<div class="math" id="eq%d"><a href="#eq%d" class="eqnum">%d</a> %s</div>' % (
-            eqnum, eqnum, eqnum, parsemath('%s' % s[2:]))
-    if s[:2] == '* ':
+        return (
+            '<div class="math" id="eq%d"><a href="#eq%d" class="eqnum">%d</a> %s</div>'
+            % (eqnum, eqnum, eqnum, parsemath("%s" % s[2:]))
+        )
+    if s[:2] == "* ":
         # list
         return parseul(s, 1)
-    if s[:3] == '1. ':
+    if s[:3] == "1. ":
         # numbered list
-        return '<ol>%s</ol>' % parseol(s)
-    if s[:2] == '| ':
+        return "<ol>%s</ol>" % parseol(s)
+    if s[:2] == "| ":
         # table
         return parsetable(s)
-    if s[:3] == ':: ':
+    if s[:3] == ":: ":
         # big button
-        s = s[3:].rsplit(' ', 1)
-        return '<p><a href="%s" class="bigbutton">%s</a></p>' % (s[1], s[0])
-    return '<p>%s</p>' % (parsetext(s))
+        s = s[3:].rsplit(" ", 1)
+        return '<p><a href="{}" class="bigbutton">{}</a></p>'.format(s[1], s[0])
+
+    if "description" not in metas:
+        metas["description"] = first_sentence(s)
+    return "<p>%s</p>" % (parsetext(s))
+
+
+def first_sentence(s):
+    s = " ".join(s.split("\n"))
+    return s.split(". ")[0] + "."
 
 
 def parsepics(s):
     global fignum
-    lines = [ss[4:].split(None, 1) for ss in s.split('\n')]
-    out = ''
+    global metas
+    lines = [ss[4:].split(None, 1) for ss in s.split("\n")]
+    out = ""
     for ss in lines:
         fignum += 1
-        ss[1] = ss[1].split(': ', 1)
+        ss[1] = ss[1].split(": ", 1)
         # use an image that is resized to 600px instead if the image is locally referenced
         pic = ss[0]
-        ss[1][1] = ss[1][1].split(' (full size: ')
+        ss[1][1] = ss[1][1].split(" (full size: ")
         fullpic = ss[0]
-        if len(ss[1][1]) == 1 and ss[0][:4] != 'http' and ss[0][-4:] in [
-                '.png', '.jpg'
-        ]:
-            pic = ss[0][:-4] + '_600' + ss[0][-4:]
+        if (
+            len(ss[1][1]) == 1
+            and ss[0][:4] != "http"
+            and ss[0][-4:] in [".png", ".jpg"]
+        ):
+            pic = ss[0][:-4] + "_600" + ss[0][-4:]
         elif len(ss[1][1]) == 2:
             # if the description contains the string " (full size: %s)" then use that
             fullpic = ss[1][1][1][:-1]
-        t = (fignum, fullpic, pic, ss[1][0], fignum, fignum,
-             parsetext(ss[1][1][0]))
-        out += '<figure id="fig%d"><a href="%s"><img src="%s" alt="%s"/></a><figcaption><a href="#fig%d" class="fignum">FIGURE %d</a> %s</figcaption></figure>' % t
+        out += f'<figure id="fig{fignum}"><a href="{fullpic}"><img src="{pic}" alt="{ss[1][0]}"/></a><figcaption><a href="#fig{fignum}" class="fignum">FIGURE {fignum}</a> {parsetext(ss[1][1][0])}</figcaption></figure>'
+
+        if "image" not in metas:
+            metas["image"] = pic
+
     return out
 
 
 def parseul(s, level):
-    s = '\n' + s
-    items = [ss.strip() for ss in ('\n' + s).split('\n' + '*' * level + ' ')]
+    s = "\n" + s
+    items = [ss.strip() for ss in ("\n" + s).split("\n" + "*" * level + " ")]
     out = parsetext(items[0])
     if len(items) > 1:
-        out += '<ul>%s</ul>' % ''.join(
-            ['<li>%s</li>' % parseul(item, level + 1) for item in items[1:]])
+        out += "<ul>%s</ul>" % "".join(
+            ["<li>%s</li>" % parseul(item, level + 1) for item in items[1:]]
+        )
     return out
 
 
 def parseol(s):
-    return ''.join([
-        '<li>%s</li>' % parsetext(ss) for ss in re.split('\n\\d+\\. ', s[2:])
-    ])
+    return "".join(
+        ["<li>%s</li>" % parsetext(ss) for ss in re.split("\n\\d+\\. ", s[2:])]
+    )
 
 
 def parsetable(s):
     global tablenum
     tablenum += 1
-    rows = s.split('\n')
-    table = (tablenum, parseth(rows[0]),
-             ''.join([parserow(row) for row in rows[1:-1]
-                      ]), tablenum, tablenum, parsetext(rows[-1]))
-    return '<figure id="table%d"><table>%s%s</table><figcaption><a href="#table%d" class="fignum">Table %d</a> %s</figcaption></figure>' % table
+    rows = s.split("\n")
+    table = (
+        tablenum,
+        parseth(rows[0]),
+        "".join([parserow(row) for row in rows[1:-1]]),
+        tablenum,
+        tablenum,
+        parsetext(rows[-1]),
+    )
+    return (
+        '<figure id="table%d"><table>%s%s</table><figcaption><a href="#table%d" class="fignum">Table %d</a> %s</figcaption></figure>'
+        % table
+    )
 
 
 def parseth(s):
-    return '<tr>%s</tr>' % ''.join([
-        '<th>%s</th>' % parsetext(th)
-        for th in s.split('|') if th.strip() != ''
-    ])
+    return "<tr>%s</tr>" % "".join(
+        ["<th>%s</th>" % parsetext(th) for th in s.split("|") if th.strip() != ""]
+    )
 
 
 def parserow(s):
-    if re.match('^(\\||\\s|\\-)*$', s) is not None:
-        return ''
-    return '<tr>%s</tr>' % ''.join([
-        '<td>%s</td>' % parsetext(td)
-        for td in s.split('|') if td.strip() != ''
-    ])
+    if re.match("^(\\||\\s|\\-)*$", s) is not None:
+        return ""
+    return "<tr>%s</tr>" % "".join(
+        ["<td>%s</td>" % parsetext(td) for td in s.split("|") if td.strip() != ""]
+    )
 
 
 def parsetext(s):
-    return splitparse(s.strip(), '`',
-                      lambda x: '<code>%s</code>' % html.escape(x), parsetext2)
+    return splitparse(
+        s.strip(), "`", lambda x: "<code>%s</code>" % html.escape(x), parsetext2
+    )
 
 
 def parsetext2(s):
-    return splitparse(s, '\\$', lambda x: '%s' % parsemath(x, True), parselink)
+    return splitparse(s, "\\$", lambda x: "%s" % parsemath(x, True), parselink)
 
 
 def parselink(s):
     return parseref(
-        re.sub('\\[([^\\]]+)\\]\\(([^)]+)\\)',
-               '\n~~~\n<a href="\\2">\n~~~\n\\1\n~~~\n</a>\n~~~\n', s))
+        re.sub(
+            "\\[([^\\]]+)\\]\\(([^)]+)\\)",
+            '\n~~~\n<a href="\\2">\n~~~\n\\1\n~~~\n</a>\n~~~\n',
+            s,
+        )
+    )
 
 
 def parseref(s):
     return parsecite(
-        re.sub('\\[\\#([^\\]]+)\\]',
-               '\n~~~\n<span class="refname" id="\\1">\\1</span>\n~~~\n', s))
+        re.sub(
+            "\\[\\#([^\\]]+)\\]",
+            '\n~~~\n<span class="refname" id="\\1">\\1</span>\n~~~\n',
+            s,
+        )
+    )
 
 
 def parsecite(s):
     return parsespan(
-        re.sub('\\(\\#([^\\)]+)\\)',
-               '\n~~~\n<a class="refname" href="#\\1">\\1</a>\n~~~\n', s))
+        re.sub(
+            "\\(\\#([^\\)]+)\\)",
+            '\n~~~\n<a class="refname" href="#\\1">\\1</a>\n~~~\n',
+            s,
+        )
+    )
 
 
 def parsespan(s):
-    return splitparse(s, '\n~~~\n', lambda x: x, parseem)
+    return splitparse(s, "\n~~~\n", lambda x: x, parseem)
 
 
 def parseem(s):
-    return splitparse(s, '_', lambda x: '<em>%s</em>' % typographer(x),
-                      parsestrong)
+    return splitparse(s, "_", lambda x: "<em>%s</em>" % typographer(x), parsestrong)
 
 
 def parsestrong(s):
-    return splitparse(s, '\\*\\*',
-                      lambda x: '<strong>%s</strong>' % typographer(x),
-                      typographer)
+    return splitparse(
+        s, "\\*\\*", lambda x: "<strong>%s</strong>" % typographer(x), typographer
+    )
 
 
 def typographer(s):
-    s = re.sub('"(\\w)', '“\\1', s)
-    s = re.sub('(\\s)"', '\\1“', s)
-    s = re.sub("(?<!\\w)'(\\w)", '‘\\1', s)
-    s = re.sub("(\\s)'", '\\1‘', s)
+    s = re.sub('"(\\w)', "“\\1", s)
+    s = re.sub('(\\s)"', "\\1“", s)
+    s = re.sub("(?<!\\w)'(\\w)", "‘\\1", s)
+    s = re.sub("(\\s)'", "\\1‘", s)
     return html.escape(
         unescape(
-            s.replace('---', '—').replace('--', '–').replace('"', '”').replace(
-                "'", '’').replace('...', '…')))
+            s.replace("---", "—")
+            .replace("--", "–")
+            .replace('"', "”")
+            .replace("'", "’")
+            .replace("...", "…")
+        )
+    )
 
 
-greekbm = re.compile(r'\\bm ?\\(0|1|alpha|beta|gamma|delta|epsilon|lambda|mu|nu|sigma|xi|zeta|omega|eta|theta|kappa|omicron|pi|rho|tau|upsilon|phi|psi|chi|Alpha|Beta|Gamma|Delta|Epsilon|Lambda|Mu|Nu|Sigma|Xi|Zeta|Omega|Eta|Theta|Kappa|Omicron|Pi|Rho|Tau|Upsilon|Phi|Psi|Chi)')
+greekbm = re.compile(
+    r"\\bm ?\\(0|1|alpha|beta|gamma|delta|epsilon|lambda|mu|nu|sigma|xi|zeta|omega|eta|theta|kappa|omicron|pi|rho|tau|upsilon|phi|psi|chi|Alpha|Beta|Gamma|Delta|Epsilon|Lambda|Mu|Nu|Sigma|Xi|Zeta|Omega|Eta|Theta|Kappa|Omicron|Pi|Rho|Tau|Upsilon|Phi|Psi|Chi)"
+)
+
+
 def parsemath(s, inline=False):
-    shash = hashlib.sha1(s.encode('utf-8')).hexdigest()
+    shash = hashlib.sha1(s.encode("utf-8")).hexdigest()
     if inline:
-        shash += 'i'
-    elif '\\begin{align}' not in s:
-        s = '\displaystyle{\\begin{align}' + s + '\\end{align}}'
-    filename = shash + '.svg'
-    filepath = os.path.join('texcache', filename)
+        shash += "i"
+    elif "\\begin{align}" not in s:
+        s = "\\displaystyle{\\begin{align}" + s + "\\end{align}}"
+    filename = shash + ".svg"
+    filepath = os.path.join("texcache", filename)
 
-    s = re.sub(greekbm, r'\\boldsymbol{\\\1}', s)
+    s = re.sub(greekbm, r"\\boldsymbol{\\\1}", s)
     try:
         if not os.path.isfile(filepath) or os.path.getsize(filepath) == 0:
             # extra space so that it won't be treated as an option if starting with '-'
-            mathjaxargs = ['tex2svg', ' ' + s]
+            mathjaxargs = ["tex2svg", " " + s]
             if inline:
-                mathjaxargs.append('--inline')
+                mathjaxargs.append("--inline")
             p = subprocess.Popen(mathjaxargs, stdout=subprocess.PIPE)
             jax, errors = p.communicate()
             if errors:
-                sys.stderr.write('Equation error: {}\n', errors)
+                sys.stderr.write("Equation error: {}\n", errors)
             else:
-                f = open(filepath, 'w')
-                f.write(jax.decode('utf-8'))
+                f = open(filepath, "w")
+                f.write(jax.decode("utf-8"))
                 f.close()
         jax = open(filepath).read()
         style = re.search('style=".*?"', jax)
         height = re.search('height=".*?"', jax)
-        height = jax[height.start():height.end()]
-        height = height.replace('=', ':').replace('"', '')
-        style = jax[style.start():style.end() - 1] + height + ';"'
-        return '<img src="/texcache/%s" alt="%s" %s/>' % (
-            filename, html.escape(s), style)
+        height = jax[height.start() : height.end()]
+        height = height.replace("=", ":").replace('"', "")
+        style = jax[style.start() : style.end() - 1] + height + ';"'
+        return '<img src="/texcache/{}" alt="{}" {}/>'.format(
+            filename,
+            html.escape(s),
+            style,
+        )
     except Exception as e:
-        sys.stderr.write('Equation error: {}\n{}\n'.format(s, e))
-        return ''
+        sys.stderr.write(f"Equation error: {s}\n{e}\n")
+        return ""
 
 
 def highlight(s):
-    firstline = s.split('\n', 1)[0]
-    if firstline[:5] == 'lang ':
+    firstline = s.split("\n", 1)[0]
+    if firstline[:5] == "lang ":
         lexer = pygments.lexers.get_lexer_by_name(firstline[5:], stripall=True)
-        s = s.split('\n', 1)[1]
+        s = s.split("\n", 1)[1]
     else:
         lexer = None
         try:
             lexer = pygments.lexers.guess_lexer(s)
-        except:
+        except pygments.util.ClassNotFound:
             lexer = pygments.lexers.special.TextLexer
     return pygments.highlight(s, lexer, pygments.formatters.HtmlFormatter())
 
 
 def main():
-    s = ''
+    s = ""
     while True:
         try:
-            s += input() + '\n'
+            s += input() + "\n"
         except EOFError:
             break
     print(parse(s))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

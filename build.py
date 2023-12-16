@@ -40,7 +40,7 @@ ROOT_NAV = '<a href="{child}">{child_name}</a>'
 BREAD = '<a href="/"><span id="dllu"><span style="display:none;">dllu</span><span id="D"></span><span id="L0"></span><span id="L1"></span><span id="U"></span></span></a><span>/</span>'
 BREAD_HERO = '<a href="/" id="hero-a"><span id="dllu-hero"><span style="display:none;">dllu</span><span id="D"></span><span id="L0"></span><span id="L1"></span><span id="U"></span></span></a>'
 # all consecutive breadcrumbs
-CRUMB = '<a href="{child}">{child}</a><span>/</span>'
+CRUMB = '<a href="{cpath}">{child}</a><span>/</span>'
 
 # page markup
 PAGE = '<!DOCTYPE html>\n{sig}\n{htmlhead}<nav id="breadcrumbs">{breadcrumbs}</nav><nav id="rootnav">{rootnav}</nav><nav id="{navtype}">{nav}</nav><main>{output}<footer><p>&copy; Daniel Lawrence Lu. Page generated on {time} by <a href="/programming/dllup/">dllup</a>. (<a href="{text}">text version</a>)</footer></main>{htmlfoot}'
@@ -100,7 +100,7 @@ def recurse(path: Path = Path(), rootnav="", root=""):
         except KeyError:
             pass  # ignore folders without complete data
 
-    breadcrumbs = generate_breadcrumbs(path)
+    breadcrumbs = generate_breadcrumbs(path, root)
     # recurse through children
     for child in children:
         if child.is_dir():
@@ -190,14 +190,14 @@ def resize_images(path, child):
             os.system(f'gm convert "{filename}" -resize {scale} "{f}"')
 
 
-def generate_breadcrumbs(path):
+def generate_breadcrumbs(path, root):
     if path == Path():
         return BREAD_HERO
     breadcrumbs = BREAD
-    crumbs = "/"
-    for crumb in path.parts[1:]:
-        crumbs += crumb + "/"
-        breadcrumbs += CRUMB.format(cpath=crumbs, child=crumb)
+    cpath = Path()
+    for crumb in path.parts:
+        cpath = cpath / crumb
+        breadcrumbs += CRUMB.format(cpath=f"{root}/{cpath}", child=crumb)
     return breadcrumbs
 
 

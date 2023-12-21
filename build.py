@@ -136,7 +136,7 @@ def recurse(path: Path = Path(), rootnav="", root=""):
             if len(ss) > 1:
                 title = ss[0].strip()
             else:
-                title = child.name
+                title = child.parent.name
 
             metas["title"] = title
             if "image" in metas:

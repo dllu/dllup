@@ -340,15 +340,17 @@ def parsemath(s, inline=False):
                 f.close()
         jax = open(filepath).read()
         style = re.search('style=".*?"', jax)
+
         height = re.search('height=".*?"', jax)
         height = jax[height.start() : height.end()]
         height = height.replace("=", ":").replace('"', "")
-        style = jax[style.start() : style.end() - 1] + height + ';"'
-        return '<img src="/texcache/{}" alt="{}" {}/>'.format(
-            filename,
-            html.escape(s),
-            style,
-        )
+
+        width = re.search('width=".*?"', jax)
+        width = jax[width.start() : width.end()]
+        width = width.replace("=", ":").replace('"', "")
+
+        style = f'{jax[style.start() : style.end() - 1]} {height}; {width};"'
+        return f'<img src="/texcache/{filename}" alt="{html.escape(s)}" {style}/>'
     except Exception as e:
         sys.stderr.write(f"Equation error: {s}\n{e}\n")
         return ""

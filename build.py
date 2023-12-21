@@ -23,11 +23,13 @@
 # THE SOFTWARE.
 
 import dllup
+from get_image_dimensions import get_image_dimensions
 import hashlib
 import os
 import re
 import struct
 import time
+import PIL
 from pathlib import Path
 from operator import itemgetter
 
@@ -138,8 +140,24 @@ def recurse(path: Path = Path(), rootnav="", root=""):
 
             metas["title"] = title
             if "image" in metas:
+                width, height = None, None
                 if metas["image"][:7] != "http://" and metas["image"][:8] != "https://":
+                    try:
+                        width, height = get_image_dimensions(
+                            str(path / metas["image"]), "img_size_db.db"
+                        )
+                    except PIL.UnidentifiedImageError:
+                        pass
                     metas["image"] = f'{root}/{path}/{metas["image"]}'
+                else:
+                    try:
+                        width, height = get_image_dimensions(metas["image"])
+                    except PIL.UnidentifiedImageError:
+                        pass
+                if width is not None and height is not None:
+                    metas["image:width"] = width
+                    metas["image:height"] = height
+
             meta_html = format_meta(metas)
             head = htmlhead.format(title=title, metas=meta_html)
 
@@ -173,8 +191,11 @@ def format_meta(metas):
     meta_html = "\n".join(
         f'<meta property="og:{k}" content="{v}" />' for k, v in metas.items()
     )
+    if "image" in metas:
+        meta_html += '<meta name="twitter:card" content="summary_large_image">'
     if "description" in metas:
         meta_html += f'<meta name="description" content="{metas["description"]}" />'
+    meta_html += '<meta name="robots" content="max-image-preview:large">'
     return meta_html
 
 

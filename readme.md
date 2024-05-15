@@ -6,8 +6,6 @@ This is a personal website aiming for simplicity, ease of maintenance, and suppo
 
 Tools used:
 
-* [SASS](http://sass-lang.com/)
-* [jpegoptim](https://github.com/tjko/jpegoptim)
-* [optipng](http://optipng.sourceforge.net/)
+* [dart-sass](https://sass-lang.com/dart-sass/)
 * [mathjax-node-cli](https://www.npmjs.com/package/mathjax-node-cli)
 * [beautifulsoup4](https://www.crummy.com/software/BeautifulSoup/)

@@ -257,7 +257,7 @@ def main():
         htmlfoot = f.read()
     hash = hashlib.sha1(struct.pack("f", os.path.getmtime("css"))).hexdigest()
     cssname = f"dllu-{hash}.css"
-    os.system(f"sassc -t compressed css/dllu.scss > {cssname}")
+    os.system(f"sass compressed css/dllu.scss {cssname}")
     htmlhead = htmlhead.replace("dllu.css", cssname)
     recurse()
 

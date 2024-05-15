@@ -108,9 +108,10 @@ def recurse(path: Path = Path(), rootnav="", root=""):
         if child.is_dir():
             recurse(child, rootnav, root)
         if child.suffix in RASTER_IMG and "_600" not in child.name:
-            resize_images(path, child)
-            pass
-        elif child.suffix == ".dllu":
+            resize_images(path, child.name)
+
+    for child in children:
+        if child.suffix == ".dllu":
             with open(child) as o:
                 markup = o.read()
             hash = hashlib.sha1(
